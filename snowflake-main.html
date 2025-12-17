@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>雪花样式展示 - 主页</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #0a1128;
+            font-family: Arial, sans-serif;
+            color: white;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 60px;
+        }
+        .header h1 {
+            font-size: 48px;
+            margin: 0 0 15px 0;
+            background: linear-gradient(135deg, #ffffff 0%, rgba(255, 255, 255, 0.8) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+            font-weight: 700;
+            letter-spacing: 1px;
+        }
+        .style-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        .style-list li {
+            margin: 0 0 20px 0;
+        }
+        .style-link {
+            display: block;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.05) 100%);
+            color: white;
+            text-decoration: none;
+            padding: 25px 30px;
+            border-radius: 15px;
+            font-size: 24px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(10px);
+            text-align: center;
+        }
+        .style-link:hover {
+            transform: translateY(-5px) scale(1.02);
+            box-shadow: 0 15px 45px rgba(0, 0, 0, 0.3);
+            border-color: rgba(255, 255, 255, 0.4);
+        }
+        .style-link:active {
+            transform: translateY(-2px);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>雪花样式展示</h1>
+        </div>
+        <ul class="style-list">
+            <li><a href="snowflake-style1.html" class="style-link">雪花样式 1</a></li>
+            <li><a href="snowflake-style2.html" class="style-link">雪花样式 2</a></li>
+            <li><a href="snowflake-style3.html" class="style-link">雪花样式 3</a></li>
+        </ul>
+    </div>
+    <!-- 引入雪花飘落效果所需的脚本 -->
+    <script src="snowflake-styles.js"></script>
+    <script src="snowfall.js"></script>
+</body>
+</html>
