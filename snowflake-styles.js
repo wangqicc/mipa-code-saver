@@ -11,13 +11,15 @@
      * @param {CanvasRenderingContext2D} ctx - Canvas上下文
      * @param {string} color - 雪花颜色
      * @param {number} lineWidth - 线条宽度
+     * @param {number} opacity - 透明度（0-1）
      */
-    setDrawingStyle(ctx, color = '#ffffff', lineWidth = 2.0) {
+    setDrawingStyle(ctx, color = '#ffffff', lineWidth = 2.0, opacity = 1.0) {
       ctx.lineWidth = lineWidth;
       ctx.lineCap = 'round';
       ctx.lineJoin = 'round';
       ctx.strokeStyle = color;
       ctx.fillStyle = color;
+      ctx.globalAlpha = opacity;
     },
 
     /**
@@ -28,13 +30,14 @@
      * @param {number} size - 雪花大小（像素）
      * @param {string} color - 雪花颜色
      * @param {number} lineWidth - 线条宽度
+     * @param {number} opacity - 透明度（0-1）
      */
-    drawStyle1(ctx, x, y, size, color = '#ffffff', lineWidth = 4.5) {
+    drawStyle1(ctx, x, y, size, color = '#ffffff', lineWidth = 4.5, opacity = 1.0) {
       ctx.save();
       ctx.translate(x, y);
       ctx.scale(size / 85, size / 85);
 
-      this.setDrawingStyle(ctx, color, lineWidth);
+      this.setDrawingStyle(ctx, color, lineWidth, opacity);
 
       // 绘制中心圆
       ctx.beginPath();
@@ -112,13 +115,14 @@
      * @param {number} size - 雪花大小（像素）
      * @param {string} color - 雪花颜色
      * @param {number} lineWidth - 线条宽度
+     * @param {number} opacity - 透明度（0-1）
      */
-    drawStyle2(ctx, x, y, size, color = '#ffffff', lineWidth = 4.5) {
+    drawStyle2(ctx, x, y, size, color = '#ffffff', lineWidth = 4.5, opacity = 1.0) {
       ctx.save();
       ctx.translate(x, y);
       ctx.scale(size / 85, size / 85);
 
-      this.setDrawingStyle(ctx, color, lineWidth);
+      this.setDrawingStyle(ctx, color, lineWidth, opacity);
 
       // 绘制中心圆
       ctx.beginPath();
@@ -196,16 +200,17 @@
      * @param {number} size - 雪花大小（像素）
      * @param {string} color - 雪花颜色
      * @param {number} lineWidth - 线条宽度
+     * @param {number} opacity - 透明度（0-1）
      */
-    drawStyle3(ctx, x, y, size, color = '#ffffff', lineWidth = 4.5) {
+    drawStyle3(ctx, x, y, size, color = '#ffffff', lineWidth = 4.5, opacity = 1.0) {
       ctx.save();
       ctx.translate(x, y);
       ctx.scale(size / 100, size / 100);
 
-      this.setDrawingStyle(ctx, color, lineWidth);
+      this.setDrawingStyle(ctx, color, lineWidth, opacity);
 
       // 绘制中心六角星
-      this._drawHexagonStar(ctx, 32, color);
+      this._drawHexagonStar(ctx, 36, color);
 
       // 绘制6个主分支
       for (let i = 0; i < 6; i++) {
@@ -235,7 +240,7 @@
       ctx.beginPath();
 
       for (let i = 0; i < 12; i++) {
-        const radius = i % 2 === 1 ? size : size * 0.36;
+        const radius = i % 2 === 1 ? size : size * 0.45;
         const angle = i * Math.PI / 6;
 
         const x = radius * Math.cos(angle);
@@ -279,8 +284,8 @@
      */
     _drawSubBranches(ctx, angle, color) {
       // 定义子分支的位置和长度（与图像完全匹配）
-      const subBranchPositions = [25, 45, 65]; // 距离中心的距离
-      const subBranchLengths = [16, 28, 16]; // 子分支长度
+      const subBranchPositions = [28, 48, 68]; // 距离中心的距离
+      const subBranchLengths = [18, 32, 18]; // 子分支长度
 
       // 绘制每个位置的子分支
       subBranchPositions.forEach((position, index) => {

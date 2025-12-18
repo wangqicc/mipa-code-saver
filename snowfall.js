@@ -2,10 +2,11 @@
   // 默认配置
   const defaultConfig = {
     count: 100,
-    sizeRange: [8, 12],
+    sizeRange: [8, 16],
     speedRange: [1, 2],
     color: '#ffffff',
     opacity: 0.8,
+    lineWidth: 12, // 默认分支宽度，与snowflake-styles.js中的默认值保持一致
     shapes: ['style1', 'style2', 'style3'] // 支持多种雪花样式：style1（原来的样式）、style2（新的样式）和style3（第三种样式）
   }
 
@@ -110,19 +111,15 @@
     if (!ensureStylesLoaded()) return;
 
     snowflakes.forEach(snowflake => {
-      ctx.globalAlpha = snowflake.opacity;
-
       // 根据雪花的shape属性调用不同的绘制函数
       if (snowflake.shape === 'style2') {
-        window.SnowflakeStyles.drawStyle2(ctx, snowflake.x, snowflake.y, snowflake.size, config.color);
+        window.SnowflakeStyles.drawStyle2(ctx, snowflake.x, snowflake.y, snowflake.size, config.color, config.lineWidth, snowflake.opacity);
       } else if (snowflake.shape === 'style3') {
-        window.SnowflakeStyles.drawStyle3(ctx, snowflake.x, snowflake.y, snowflake.size, config.color);
+        window.SnowflakeStyles.drawStyle3(ctx, snowflake.x, snowflake.y, snowflake.size, config.color, config.lineWidth, snowflake.opacity);
       } else {
-        window.SnowflakeStyles.drawStyle1(ctx, snowflake.x, snowflake.y, snowflake.size, config.color);
+        window.SnowflakeStyles.drawStyle1(ctx, snowflake.x, snowflake.y, snowflake.size, config.color, config.lineWidth, snowflake.opacity);
       }
     });
-
-    ctx.globalAlpha = 1;
   }
 
   // 更新雪花位置
