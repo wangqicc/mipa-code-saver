@@ -7,7 +7,7 @@
     color: '#ffffff',
     opacity: 0.8,
     lineWidth: 5.2, // 默认分支宽度，与snowflake-styles.js中的默认值保持一致
-    shapes: ['style2'] // 支持多种雪花样式：style1、style2和style3
+    shapes: ['style1', 'style2', 'style3'] // 支持多种雪花样式：style1、style2和style3
   }
 
   // 合并用户配置和默认配置
@@ -17,6 +17,9 @@
   let snowflakes = [];
   let animationId;
   let isInitialized = false;
+  let lastTime = 0;
+  const targetFPS = 30;
+  const frameInterval = 1000 / targetFPS;
 
   // 检查浏览器是否支持Canvas
   function isCanvasSupported() {
@@ -48,6 +51,7 @@
     generateSnowflakes();
     startAnimation();
     addEventListeners();
+    initBatteryMonitoring();
     isInitialized = true;
   }
 
@@ -154,9 +158,13 @@
   }
 
   // 动画循环
-  function animate() {
-    updateSnowflakes();
-    drawSnowflakes();
+  function animate(timestamp = 0) {
+    // 帧率控制：只在达到目标帧间隔时更新
+    if (timestamp - lastTime >= frameInterval) {
+      updateSnowflakes();
+      drawSnowflakes();
+      lastTime = timestamp;
+    }
     animationId = requestAnimationFrame(animate);
   }
 
@@ -189,14 +197,54 @@
   // 防抖处理后的resize函数
   const debouncedResizeCanvas = debounce(resizeCanvas, 200);
 
+  // 页面可见性变化处理
+  function handleVisibilityChange() {
+    if (document.hidden) {
+      stopAnimation();
+    } else {
+      startAnimation();
+    }
+  }
+
+  // 电池状态变化处理
+  function handleBatteryStatus(battery) {
+    // 低电量时（≤20%）减少雪花数量和简化动画
+    if (battery.level <= 0.2 && battery.charging === false) {
+      if (config.count > 20) {
+        config.count = 20;
+        generateSnowflakes();
+      }
+    } else {
+      // 恢复正常雪花数量
+      if (config.count !== defaultConfig.count) {
+        config.count = defaultConfig.count;
+        generateSnowflakes();
+      }
+    }
+  }
+
+  // 初始化电池状态监听
+  function initBatteryMonitoring() {
+    if ('getBattery' in navigator || ('battery' in navigator && navigator.battery)) {
+      const batteryPromise = navigator.getBattery ? navigator.getBattery() : Promise.resolve(navigator.battery);
+      batteryPromise.then(battery => {
+        handleBatteryStatus(battery);
+        battery.addEventListener('levelchange', () => handleBatteryStatus(battery));
+        battery.addEventListener('chargingchange', () => handleBatteryStatus(battery));
+      });
+    }
+  }
+
   // 添加事件监听器
   function addEventListeners() {
     window.addEventListener('resize', debouncedResizeCanvas);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
   }
 
   // 移除事件监听器
   function removeEventListeners() {
     window.removeEventListener('resize', debouncedResizeCanvas);
+    document.removeEventListener('visibilitychange', handleVisibilityChange);
   }
 
   // 销毁雪花效果
