@@ -1,13 +1,13 @@
 (function() {
   // 默认配置
   const defaultConfig = {
-    count: 100,
+    count: 52,
     sizeRange: [8, 16],
     speedRange: [1, 2],
     color: '#ffffff',
     opacity: 0.8,
-    lineWidth: 12, // 默认分支宽度，与snowflake-styles.js中的默认值保持一致
-    shapes: ['style1', 'style2', 'style3'] // 支持多种雪花样式：style1（原来的样式）、style2（新的样式）和style3（第三种样式）
+    lineWidth: 5.2, // 默认分支宽度，与snowflake-styles.js中的默认值保持一致
+    shapes: ['style2'] // 支持多种雪花样式：style1、style2和style3
   }
 
   // 合并用户配置和默认配置
@@ -36,17 +36,18 @@
   // 初始化函数
   function init() {
     if (isInitialized) return;
-
     if (!isCanvasSupported()) {
       console.warn('Canvas is not supported, snowfall effect will not be rendered.');
       return;
     }
-
+    // 初始化SnowflakeStyles库
+    if (!initSnowflakeStyles()) {
+      return;
+    }
     createCanvas();
     generateSnowflakes();
     startAnimation();
     addEventListeners();
-
     isInitialized = true;
   }
 
@@ -54,17 +55,14 @@
   function createCanvas() {
     canvas = document.createElement('canvas');
     ctx = canvas.getContext('2d');
-
     // 设置Canvas为全屏
     resizeCanvas();
-
     // 设置样式
     canvas.style.position = 'fixed';
     canvas.style.top = '0';
     canvas.style.left = '0';
     canvas.style.pointerEvents = 'none';
     canvas.style.zIndex = '9999';
-
     // 添加到body
     document.body.appendChild(canvas);
   }
@@ -95,29 +93,41 @@
     }
   }
 
-  // 使用外部 SnowflakeStyles 库绘制雪花
-  function ensureStylesLoaded() {
+  // 存储SnowflakeStyles引用，避免每次绘制都访问window
+  let snowflakeStyles = null;
+
+  // 检查并初始化SnowflakeStyles库
+  function initSnowflakeStyles() {
     if (!window.SnowflakeStyles) {
       console.error('SnowflakeStyles library not loaded! Please include snowflake-styles.js before snowfall.js.');
       return false;
     }
+    snowflakeStyles = window.SnowflakeStyles;
+    // 清理缓存，确保新的尺寸计算生效
+    snowflakeStyles.clearCache();
     return true;
   }
 
   // 绘制雪花
   function drawSnowflakes() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    if (!ensureStylesLoaded()) return;
+    if (!snowflakeStyles) return;
+    // 预提取配置属性，避免在循环中重复访问
+    const color = config.color;
+    const lineWidth = config.lineWidth;
 
     snowflakes.forEach(snowflake => {
       // 根据雪花的shape属性调用不同的绘制函数
-      if (snowflake.shape === 'style2') {
-        window.SnowflakeStyles.drawStyle2(ctx, snowflake.x, snowflake.y, snowflake.size, config.color, config.lineWidth, snowflake.opacity);
-      } else if (snowflake.shape === 'style3') {
-        window.SnowflakeStyles.drawStyle3(ctx, snowflake.x, snowflake.y, snowflake.size, config.color, config.lineWidth, snowflake.opacity);
-      } else {
-        window.SnowflakeStyles.drawStyle1(ctx, snowflake.x, snowflake.y, snowflake.size, config.color, config.lineWidth, snowflake.opacity);
+      switch (snowflake.shape) {
+        case 'style2':
+          snowflakeStyles.drawStyle2(ctx, snowflake.x, snowflake.y, snowflake.size, color, lineWidth, snowflake.opacity);
+          break;
+        case 'style3':
+          snowflakeStyles.drawStyle3(ctx, snowflake.x, snowflake.y, snowflake.size, color, lineWidth, snowflake.opacity);
+          break;
+        default:
+          snowflakeStyles.drawStyle1(ctx, snowflake.x, snowflake.y, snowflake.size, color, lineWidth, snowflake.opacity);
+          break;
       }
     });
   }
@@ -129,13 +139,11 @@
       snowflake.y += snowflake.speed;
       // 左右漂移
       snowflake.x += snowflake.drift;
-
       // 如果雪花超出屏幕底部，重置到顶部
       if (snowflake.y > canvas.height) {
         snowflake.y = -snowflake.size;
         snowflake.x = Math.random() * canvas.width;
       }
-
       // 如果雪花超出屏幕左右，重置位置
       if (snowflake.x > canvas.width + snowflake.size) {
         snowflake.x = -snowflake.size;
@@ -165,14 +173,30 @@
     }
   }
 
+  // 防抖函数
+  function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+      const later = () => {
+        clearTimeout(timeout);
+        func(...args);
+      };
+      clearTimeout(timeout);
+      timeout = setTimeout(later, wait);
+    };
+  }
+
+  // 防抖处理后的resize函数
+  const debouncedResizeCanvas = debounce(resizeCanvas, 200);
+
   // 添加事件监听器
   function addEventListeners() {
-    window.addEventListener('resize', resizeCanvas);
+    window.addEventListener('resize', debouncedResizeCanvas);
   }
 
   // 移除事件监听器
   function removeEventListeners() {
-    window.removeEventListener('resize', resizeCanvas);
+    window.removeEventListener('resize', debouncedResizeCanvas);
   }
 
   // 销毁雪花效果
