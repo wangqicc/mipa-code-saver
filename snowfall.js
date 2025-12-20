@@ -1,12 +1,12 @@
 (function() {
   // 默认配置
   const defaultConfig = {
-    count: 52,
+    count: 92,
     sizeRange: [8, 16],
     speedRange: [1, 2],
     color: '#ffffff',
     opacity: 0.8,
-    lineWidth: 5.2, // 默认分支宽度，与snowflake-styles.js中的默认值保持一致
+    lineWidth: 9.2, // 默认分支宽度，与snowflake-styles.js中的默认值保持一致
     shapes: ['style1', 'style2', 'style3'] // 支持多种雪花样式：style1、style2和style3
   }
 
@@ -18,7 +18,7 @@
   let animationId;
   let isInitialized = false;
   let lastTime = 0;
-  const targetFPS = 30;
+  const targetFPS = 45;
   const frameInterval = 1000 / targetFPS;
 
   // 检查浏览器是否支持Canvas
@@ -112,6 +112,39 @@
     return true;
   }
 
+  // 离屏Canvas缓存，用于预绘制雪花
+  const offscreenCanvases = new Map();
+
+  // 预绘制雪花到离屏Canvas
+  function preDrawSnowflake(shape, size, color, lineWidth, opacity) {
+    const cacheKey = `${shape}_${size}_${color}_${lineWidth}_${opacity}`;
+    if (offscreenCanvases.has(cacheKey)) {
+      return offscreenCanvases.get(cacheKey);
+    }
+
+    const offscreenCanvas = document.createElement('canvas');
+    const offscreenCtx = offscreenCanvas.getContext('2d');
+    const diameter = size * 2;
+    offscreenCanvas.width = diameter;
+    offscreenCanvas.height = diameter;
+
+    // 绘制雪花到离屏Canvas
+    switch (shape) {
+      case 'style2':
+        snowflakeStyles.drawStyle2(offscreenCtx, size, size, size, color, lineWidth, opacity);
+        break;
+      case 'style3':
+        snowflakeStyles.drawStyle3(offscreenCtx, size, size, size, color, lineWidth, opacity);
+        break;
+      default:
+        snowflakeStyles.drawStyle1(offscreenCtx, size, size, size, color, lineWidth, opacity);
+        break;
+    }
+
+    offscreenCanvases.set(cacheKey, offscreenCanvas);
+    return offscreenCanvas;
+  }
+
   // 绘制雪花
   function drawSnowflakes() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -120,25 +153,17 @@
     const color = config.color;
     const lineWidth = config.lineWidth;
 
-    snowflakes.forEach(snowflake => {
-      // 根据雪花的shape属性调用不同的绘制函数
-      switch (snowflake.shape) {
-        case 'style2':
-          snowflakeStyles.drawStyle2(ctx, snowflake.x, snowflake.y, snowflake.size, color, lineWidth, snowflake.opacity);
-          break;
-        case 'style3':
-          snowflakeStyles.drawStyle3(ctx, snowflake.x, snowflake.y, snowflake.size, color, lineWidth, snowflake.opacity);
-          break;
-        default:
-          snowflakeStyles.drawStyle1(ctx, snowflake.x, snowflake.y, snowflake.size, color, lineWidth, snowflake.opacity);
-          break;
-      }
-    });
+    for (let i = 0, len = snowflakes.length; i < len; i++) {
+      const snowflake = snowflakes[i];
+      const offscreenCanvas = preDrawSnowflake(snowflake.shape, snowflake.size, color, lineWidth, snowflake.opacity);
+      ctx.drawImage(offscreenCanvas, snowflake.x - snowflake.size, snowflake.y - snowflake.size);
+    }
   }
 
   // 更新雪花位置
   function updateSnowflakes() {
-    snowflakes.forEach(snowflake => {
+    for (let i = 0, len = snowflakes.length; i < len; i++) {
+      const snowflake = snowflakes[i];
       // 向下移动
       snowflake.y += snowflake.speed;
       // 左右漂移
@@ -154,7 +179,7 @@
       } else if (snowflake.x < -snowflake.size) {
         snowflake.x = canvas.width + snowflake.size;
       }
-    });
+    }
   }
 
   // 动画循环
@@ -257,6 +282,9 @@
     if (canvas && canvas.parentNode) {
       canvas.parentNode.removeChild(canvas);
     }
+
+    // 清理离屏Canvas缓存，避免内存泄漏
+    offscreenCanvases.clear();
 
     snowflakes = [];
     isInitialized = false;
