@@ -21,13 +21,18 @@
   const targetFPS = 45;
   const frameInterval = 1000 / targetFPS;
 
-  // 检查浏览器是否支持Canvas
+  /**
+   * 检查浏览器是否支持Canvas API
+   * @returns {boolean} 是否支持
+   */
   function isCanvasSupported() {
     const elem = document.createElement('canvas');
     return !!(elem.getContext && elem.getContext('2d'));
   }
 
-  // 等待DOM加载完成
+  /**
+   * 等待DOM加载完成后初始化
+   */
   function waitForDOM() {
     if (document.readyState === 'loading') {
       document.addEventListener('DOMContentLoaded', init);
@@ -36,7 +41,10 @@
     }
   }
 
-  // 初始化函数
+  /**
+   * 初始化雪花效果
+   * 包括创建Canvas、生成雪花、启动动画和事件监听
+   */
   function init() {
     if (isInitialized) return;
     if (!isCanvasSupported()) {
@@ -55,7 +63,9 @@
     isInitialized = true;
   }
 
-  // 创建Canvas元素
+  /**
+   * 创建并配置Canvas元素
+   */
   function createCanvas() {
     canvas = document.createElement('canvas');
     ctx = canvas.getContext('2d');
@@ -71,13 +81,17 @@
     document.body.appendChild(canvas);
   }
 
-  // 调整Canvas尺寸
+  /**
+   * 调整Canvas尺寸以适应窗口大小
+   */
   function resizeCanvas() {
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
   }
 
-  // 生成雪花
+  /**
+   * 根据配置生成雪花对象数组
+   */
   function generateSnowflakes() {
     snowflakes = [];
 
@@ -88,7 +102,8 @@
       snowflakes.push({
         x: Math.random() * canvas.width,
         y: Math.random() * canvas.height,
-        size: Math.random() * (config.sizeRange[1] - config.sizeRange[0]) + config.sizeRange[0],
+        // 取整大小以提高缓存命中率
+        size: Math.floor(Math.random() * (config.sizeRange[1] - config.sizeRange[0]) + config.sizeRange[0]),
         speed: Math.random() * (config.speedRange[1] - config.speedRange[0]) + config.speedRange[0],
         opacity: Math.random() * config.opacity,
         drift: Math.random() * 0.5 - 0.25,
@@ -100,7 +115,10 @@
   // 存储SnowflakeStyles引用，避免每次绘制都访问window
   let snowflakeStyles = null;
 
-  // 检查并初始化SnowflakeStyles库
+  /**
+   * 检查并初始化SnowflakeStyles库
+   * @returns {boolean} 是否初始化成功
+   */
   function initSnowflakeStyles() {
     if (!window.SnowflakeStyles) {
       console.error('SnowflakeStyles library not loaded! Please include snowflake-styles.js before snowfall.js.');
@@ -112,40 +130,9 @@
     return true;
   }
 
-  // 离屏Canvas缓存，用于预绘制雪花
-  const offscreenCanvases = new Map();
-
-  // 预绘制雪花到离屏Canvas
-  function preDrawSnowflake(shape, size, color, lineWidth, opacity) {
-    const cacheKey = `${shape}_${size}_${color}_${lineWidth}_${opacity}`;
-    if (offscreenCanvases.has(cacheKey)) {
-      return offscreenCanvases.get(cacheKey);
-    }
-
-    const offscreenCanvas = document.createElement('canvas');
-    const offscreenCtx = offscreenCanvas.getContext('2d');
-    const diameter = size * 2;
-    offscreenCanvas.width = diameter;
-    offscreenCanvas.height = diameter;
-
-    // 绘制雪花到离屏Canvas
-    switch (shape) {
-      case 'style2':
-        snowflakeStyles.drawStyle2(offscreenCtx, size, size, size, color, lineWidth, opacity);
-        break;
-      case 'style3':
-        snowflakeStyles.drawStyle3(offscreenCtx, size, size, size, color, lineWidth, opacity);
-        break;
-      default:
-        snowflakeStyles.drawStyle1(offscreenCtx, size, size, size, color, lineWidth, opacity);
-        break;
-    }
-
-    offscreenCanvases.set(cacheKey, offscreenCanvas);
-    return offscreenCanvas;
-  }
-
-  // 绘制雪花
+  /**
+   * 清除画布并绘制所有雪花
+   */
   function drawSnowflakes() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     if (!snowflakeStyles) return;
@@ -155,13 +142,29 @@
 
     for (let i = 0, len = snowflakes.length; i < len; i++) {
       const snowflake = snowflakes[i];
-      const offscreenCanvas = preDrawSnowflake(snowflake.shape, snowflake.size, color, lineWidth, snowflake.opacity);
-      ctx.drawImage(offscreenCanvas, snowflake.x - snowflake.size, snowflake.y - snowflake.size);
+      // 直接调用样式库绘制，利用其内部的缓存机制
+      switch (snowflake.shape) {
+        case 'style2':
+          snowflakeStyles.drawStyle2(ctx, snowflake.x, snowflake.y, snowflake.size, color, lineWidth, snowflake.opacity);
+          break;
+        case 'style3':
+          snowflakeStyles.drawStyle3(ctx, snowflake.x, snowflake.y, snowflake.size, color, lineWidth, snowflake.opacity);
+          break;
+        default:
+          snowflakeStyles.drawStyle1(ctx, snowflake.x, snowflake.y, snowflake.size, color, lineWidth, snowflake.opacity);
+          break;
+      }
     }
   }
 
-  // 更新雪花位置
+  /**
+   * 更新所有雪花的位置（下落和漂移）
+   * 处理边界检查和重置
+   */
   function updateSnowflakes() {
+    const width = canvas.width;
+    const height = canvas.height;
+    
     for (let i = 0, len = snowflakes.length; i < len; i++) {
       const snowflake = snowflakes[i];
       // 向下移动
@@ -169,20 +172,23 @@
       // 左右漂移
       snowflake.x += snowflake.drift;
       // 如果雪花超出屏幕底部，重置到顶部
-      if (snowflake.y > canvas.height) {
+      if (snowflake.y > height) {
         snowflake.y = -snowflake.size;
-        snowflake.x = Math.random() * canvas.width;
+        snowflake.x = Math.random() * width;
       }
       // 如果雪花超出屏幕左右，重置位置
-      if (snowflake.x > canvas.width + snowflake.size) {
+      if (snowflake.x > width + snowflake.size) {
         snowflake.x = -snowflake.size;
       } else if (snowflake.x < -snowflake.size) {
-        snowflake.x = canvas.width + snowflake.size;
+        snowflake.x = width + snowflake.size;
       }
     }
   }
 
-  // 动画循环
+  /**
+   * 动画循环函数
+   * @param {number} timestamp - 当前时间戳
+   */
   function animate(timestamp = 0) {
     // 帧率控制：只在达到目标帧间隔时更新
     if (timestamp - lastTime >= frameInterval) {
@@ -193,12 +199,16 @@
     animationId = requestAnimationFrame(animate);
   }
 
-  // 启动动画
+  /**
+   * 启动动画循环
+   */
   function startAnimation() {
     animationId = requestAnimationFrame(animate);
   }
 
-  // 停止动画
+  /**
+   * 停止动画循环
+   */
   function stopAnimation() {
     if (animationId) {
       cancelAnimationFrame(animationId);
@@ -206,7 +216,12 @@
     }
   }
 
-  // 防抖函数
+  /**
+   * 防抖函数
+   * @param {Function} func - 需要防抖的函数
+   * @param {number} wait - 等待时间（毫秒）
+   * @returns {Function} 防抖后的函数
+   */
   function debounce(func, wait) {
     let timeout;
     return function executedFunction(...args) {
@@ -222,7 +237,10 @@
   // 防抖处理后的resize函数
   const debouncedResizeCanvas = debounce(resizeCanvas, 200);
 
-  // 页面可见性变化处理
+  /**
+   * 处理页面可见性变化
+   * 页面隐藏时停止动画，显示时恢复动画
+   */
   function handleVisibilityChange() {
     if (document.hidden) {
       stopAnimation();
@@ -231,7 +249,11 @@
     }
   }
 
-  // 电池状态变化处理
+  /**
+   * 处理电池状态变化
+   * 低电量模式下减少雪花数量以节省电量
+   * @param {BatteryManager} battery - 电池管理器对象
+   */
   function handleBatteryStatus(battery) {
     // 低电量时（≤20%）减少雪花数量和简化动画
     if (battery.level <= 0.2 && battery.charging === false) {
@@ -248,7 +270,10 @@
     }
   }
 
-  // 初始化电池状态监听
+  /**
+   * 初始化电池状态监听
+   * 仅在浏览器支持 Battery Status API 时启用
+   */
   function initBatteryMonitoring() {
     if ('getBattery' in navigator || ('battery' in navigator && navigator.battery)) {
       const batteryPromise = navigator.getBattery ? navigator.getBattery() : Promise.resolve(navigator.battery);
@@ -260,19 +285,27 @@
     }
   }
 
-  // 添加事件监听器
+  /**
+   * 添加全局事件监听器
+   * 包括窗口大小调整和页面可见性变化
+   */
   function addEventListeners() {
     window.addEventListener('resize', debouncedResizeCanvas);
     document.addEventListener('visibilitychange', handleVisibilityChange);
   }
 
-  // 移除事件监听器
+  /**
+   * 移除全局事件监听器
+   */
   function removeEventListeners() {
     window.removeEventListener('resize', debouncedResizeCanvas);
     document.removeEventListener('visibilitychange', handleVisibilityChange);
   }
 
-  // 销毁雪花效果
+  /**
+   * 销毁雪花效果并清理资源
+   * 停止动画、移除事件监听、删除Canvas元素、清理缓存
+   */
   function destroy() {
     if (!isInitialized) return;
 
@@ -284,7 +317,9 @@
     }
 
     // 清理离屏Canvas缓存，避免内存泄漏
-    offscreenCanvases.clear();
+    if (snowflakeStyles) {
+      snowflakeStyles.clearCache();
+    }
 
     snowflakes = [];
     isInitialized = false;

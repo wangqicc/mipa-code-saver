@@ -52,7 +52,9 @@
      * @returns {string} 缓存键名
      */
     _getCacheKey(style, size, color, lineWidth) {
-      return `${style}_${size}_${color}_${lineWidth}`;
+      // 对size进行取整，防止浮点数导致缓存未命中
+      const safeSize = Math.round(size * 10) / 10;
+      return `${style}_${safeSize}_${color}_${lineWidth}`;
     },
 
     /**
